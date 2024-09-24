@@ -1,12 +1,11 @@
 
 # EXTERNAL API
-
 EXTERNAL_API_DIR=./external_api
 EXTERNAL_API_OPENAPI=./api/external_openapi.yml
 
 codegen:
 	# sudo npm install @openapitools/openapi-generator-cli -g
-	sopenapi-generator-cli generate -i openapi.yml -g go-server -o .
+	openapi-generator-cli generate -i $(EXTERNAL_API_OPENAPI) -g api -o $(EXTERNAL_API_DIR)
 
 container_up :
 	docker-compose -f docker-compose.yaml up

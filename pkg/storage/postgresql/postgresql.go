@@ -32,6 +32,11 @@ func Ping(db *gorm.DB) error {
 	return nil
 }
 
+// обертка миграции данных
+func Migrate(db *gorm.DB, models ...any) error {
+	return db.AutoMigrate(models...)
+}
+
 func TxSaveExecutor(db *gorm.DB, fn func(*gorm.DB) error) error {
 	tx := db.Begin()
 	defer func() {
