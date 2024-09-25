@@ -29,6 +29,13 @@ func (r *SongRepository) Create(ctx context.Context, log *slog.Logger, song mode
 	}
 
 	if err := postgresql.TxSaveExecutor(r.db, func(d *gorm.DB) error {
+		log.Debug("Create sql query:", 
+			slog.String("id", song.Id.String()), 
+			slog.String("gruop", song.Group),
+			slog.String("title", song.Title),
+			slog.Time("release_date", song.ReleaseDate),
+			slog.String("link", song.Link))
+
 		if result := d.Create(song); result.Error != nil {
 			return result.Error
 		}
@@ -49,6 +56,13 @@ func (r *SongRepository) Update(ctx context.Context, log *slog.Logger, song mode
 
 	var oldModel model.Song
 	if err := postgresql.TxSaveExecutor(r.db, func(d *gorm.DB) error {
+		log.Debug("Update sql query:", 
+			slog.String("id", song.Id.String()), 
+			slog.String("gruop", song.Group),
+			slog.String("title", song.Title),
+			slog.Time("release_date", song.ReleaseDate),
+			slog.String("link", song.Link))
+
 		if result := d.First(&oldModel, "id = ?", song.Id); result.Error != nil {
 			return result.Error
 		}
@@ -63,7 +77,7 @@ func (r *SongRepository) Update(ctx context.Context, log *slog.Logger, song mode
 	return oldModel, nil
 }
 
-func (r *SongRepository) Delete(ctx context.Context, log *slog.Logger, song model.Song) error {
+func (r *SongRepository) Delete(ctx context.Context, log *slog.Logger, songUUID uuid.UUID) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -72,7 +86,11 @@ func (r *SongRepository) Delete(ctx context.Context, log *slog.Logger, song mode
 
 	if err := postgresql.TxSaveExecutor(r.db, func(d *gorm.DB) error {
 		var model model.Song
-		if result := d.First(&model, "id = ?", song.Id); result.Error != nil {
+
+		log.Debug("Delete sql query:", 
+			slog.String("id", songUUID.String()))
+
+		if result := d.First(&model, "id = ?", songUUID); result.Error != nil {
 			return result.Error
 		}
 		if err := d.Delete(&model).Error; err != nil {
@@ -96,23 +114,32 @@ func (r *SongRepository) GetAll(ctx context.Context, log *slog.Logger, limit int
 	if err := postgresql.TxSaveExecutor(r.db, func(d *gorm.DB) error {
 		query := d.Limit(limit).Offset(offset)
 
+		log.Debug("GetAll sql query:", slog.Int("limit", limit), slog.Int("offset", offset))
+
 		if filter.Id != nil {
 			query = query.Where("id = ?", *filter.Id)
+			log.Debug("filter detected", slog.String("filter_id", (*filter.Id).String()))
 		}
 		if filter.Group != nil {
 			query = query.Where("group = ?", *filter.Group)
+			log.Debug("filter detected", slog.String("filter_group", (*filter.Group)))
 		}
 		if filter.Title != nil {
 			query = query.Where("title = ?", *filter.Title)
+			log.Debug("filter detected", slog.String("filter_title", (*filter.Group)))
 		}
 		if filter.ReleaseDate != nil {
 			query = query.Where("release_date = ?", *filter.ReleaseDate)
+			log.Debug("filter detected", slog.String("filter_release_date", (*filter.ReleaseDate).String()))
 		}
 		if filter.Text != nil {
 			query = query.Where("text = ?", *filter.Text)
+			log.Debug("filter detected", slog.String("filter_text", (*filter.Text)))
+
 		}
 		if filter.Link != nil {
 			query = query.Where("link = ?", *filter.Link)
+			log.Debug("filter detected", slog.String("filter_link", (*filter.Link)))
 		}
 
 		res := query.Find(&models)
@@ -136,6 +163,9 @@ func (r *SongRepository) GetVerses(ctx context.Context, log *slog.Logger, songUU
 
 	var verses string
 	if err := postgresql.TxSaveExecutor(r.db, func(d *gorm.DB) error {
+		log.Debug("GetVerses sql query:", 
+			slog.String("id", songUUID.String()))
+
 		res := d.Select("text").Where("id = ?", songUUID).First(&verses)
 		if res.Error != nil {
 			return res.Error
