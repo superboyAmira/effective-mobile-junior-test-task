@@ -36,7 +36,7 @@ func (r *SongRepository) Create(ctx context.Context, log *slog.Logger, song mode
 			slog.Time("release_date", song.ReleaseDate),
 			slog.String("link", song.Link))
 
-		if result := d.Create(song); result.Error != nil {
+		if result := d.Create(&song); result.Error != nil {
 			return result.Error
 		}
 		return nil
@@ -56,18 +56,15 @@ func (r *SongRepository) Update(ctx context.Context, log *slog.Logger, song mode
 
 	var oldModel model.Song
 	if err := postgresql.TxSaveExecutor(r.db, func(d *gorm.DB) error {
-		log.Debug("Update sql query:", 
-			slog.String("id", song.Id.String()), 
-			slog.String("gruop", song.Group),
-			slog.String("title", song.Title),
-			slog.Time("release_date", song.ReleaseDate),
-			slog.String("link", song.Link))
+		log.Debug("Update sql query:",
+			slog.String("id", song.Id.String()),
+			slog.String("gruop", song.Group), slog.String("title", song.Title))
 
 		if result := d.First(&oldModel, "id = ?", song.Id); result.Error != nil {
 			return result.Error
 		}
 
-		if result := d.Model(&oldModel).Updates(song); result.Error != nil {
+		if result := d.Model(&oldModel).Updates(&song); result.Error != nil {
 			return result.Error
 		}
 		return nil
@@ -166,7 +163,7 @@ func (r *SongRepository) GetVerses(ctx context.Context, log *slog.Logger, songUU
 		log.Debug("GetVerses sql query:", 
 			slog.String("id", songUUID.String()))
 
-		res := d.Select("text").Where("id = ?", songUUID).First(&verses)
+		res := d.Model(&model.Song{}).Select("text").Where("id = ?", songUUID).First(&verses)
 		if res.Error != nil {
 			return res.Error
 		}

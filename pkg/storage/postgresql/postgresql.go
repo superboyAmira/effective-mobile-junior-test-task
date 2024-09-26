@@ -2,14 +2,16 @@ package postgresql
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func Connect() (*gorm.DB, error) {
-	dsn := newDSN();
+func Connect(log *slog.Logger) (*gorm.DB, error) {
+	dsn := newDSN()
+	log.Debug(dsn)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
@@ -60,7 +62,6 @@ func TxSaveExecutor(db *gorm.DB, fn func(*gorm.DB) error) error {
 	tx.Commit()
 	return nil
 }
-
 
 func newDSN() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",

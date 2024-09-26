@@ -25,5 +25,7 @@ func SetupLogger() *slog.Logger {
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	}
 
+	log.Info("logger enabled", slog.String("level", os.Getenv("LOG_LEVEL")))
+
 	return log
 }

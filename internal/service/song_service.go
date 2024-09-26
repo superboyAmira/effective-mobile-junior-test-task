@@ -7,18 +7,22 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"online-song-library/internal/model"
 	"online-song-library/internal/repository"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 type SongService struct {
-	repo repository.SongRepository
+	repo *repository.SongRepository
 }
 
-func NewSongService(r repository.SongRepository) *SongService {
+func NewSongService(r *repository.SongRepository) *SongService {
 	return &SongService{
 		repo: r,
 	}
@@ -47,6 +51,8 @@ func (s *SongService) GetSongVerses(ctx context.Context, log *slog.Logger, songI
 		return nil, err
 	}
 
+	log.Debug("Page Info", slog.Int("page", page), slog.Int("pageSize", pageSize))
+
 	verses := strings.Split(text, "\n\n")
 
 	totalVerses := len(verses)
@@ -62,12 +68,31 @@ func (s *SongService) GetSongVerses(ctx context.Context, log *slog.Logger, songI
 		end = totalVerses
 	}
 
+	log.Debug("Page Info Slice", slog.Int("start", start), slog.Int("end", end))
+
 	paginatedVerses := verses[start:end]
-	return paginatedVerses, nil
+
+	var finalVerses []string
+	for _, verse := range paginatedVerses {
+		finalVerses = append(finalVerses, strings.Split(verse, "\n")...)
+	}
+
+	return finalVerses, nil
 }
 
-func (s *SongService) FetchSongDetailsFromAPI(ctx context.Context, group, title string) (model.Song, error) {
-	apiURL := fmt.Sprintf("https://external-api.com/info?group=%s&song=%s", group, title)
+func (s *SongService) FetchSongDetailsFromAPI(ctx context.Context, log *slog.Logger, group, title string) (model.Song, error) {
+	port := os.Getenv("PATH_EXTERNAL_API_HTTPTEST_SERVER")
+	if _, err := strconv.Atoi(port); err != nil {
+		return model.Song{}, err
+	}
+
+	baseURL := fmt.Sprintf("http://localhost:%s/info", port)
+	params := url.Values{}
+	params.Add("group", group)
+	params.Add("song", title)
+
+	apiURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
+	log.Debug("Request URL", slog.String("url", apiURL))
 
 	resp, err := http.Get(apiURL)
 	if err != nil {
@@ -76,13 +101,27 @@ func (s *SongService) FetchSongDetailsFromAPI(ctx context.Context, group, title 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return model.Song{}, errors.New("failed to fetch song details from external API")
+		return model.Song{}, errors.New("external API status: " + strconv.Itoa(resp.StatusCode))
 	}
 
 	var songDetails model.Song
-	if err := json.NewDecoder(resp.Body).Decode(&songDetails); err != nil {
+
+	tmp := struct {
+		ReleaseDate string
+		Text        string
+		Link        string
+	}{}
+
+	if err := json.NewDecoder(resp.Body).Decode(&tmp); err != nil {
 		return model.Song{}, err
 	}
 
+	songDetails.ReleaseDate, err = time.Parse("02.01.2006", tmp.ReleaseDate)
+	if err != nil {
+		return model.Song{}, err
+	}
+	songDetails.Link = tmp.Link
+	songDetails.Text = tmp.Text
+	
 	return songDetails, nil
 }

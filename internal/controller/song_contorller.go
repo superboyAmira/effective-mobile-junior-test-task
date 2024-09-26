@@ -13,25 +13,25 @@ import (
 
 type SongController struct {
 	serv *service.SongService
-	log *slog.Logger
+	log  *slog.Logger
 }
 
 func NewSongController(service *service.SongService, logger *slog.Logger) *SongController {
 	return &SongController{
 		serv: service,
-		log: logger,
+		log:  logger,
 	}
 }
 
 func (r *SongController) CreateSong(c *gin.Context) {
 	var songDTO model.SongDTO
 	if err := c.ShouldBindJSON(&songDTO); err != nil {
-		r.log.Error("Failed to bind song DTO", slog.String("err", err.Error()))
+		r.log.Error("Failed to bind songDTO", slog.String("err", err.Error()))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	enrichedData, err := r.serv.FetchSongDetailsFromAPI(c.Request.Context(), songDTO.Group, songDTO.Title)
+	enrichedData, err := r.serv.FetchSongDetailsFromAPI(c.Request.Context(), r.log, songDTO.Group, songDTO.Title)
 	if err != nil {
 		r.log.Error("Failed to fetch song details from external API", slog.String("err", err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch song details"})
@@ -42,9 +42,9 @@ func (r *SongController) CreateSong(c *gin.Context) {
 		Id:          uuid.New(),
 		Group:       songDTO.Group,
 		Title:       songDTO.Title,
-		ReleaseDate: enrichedData.ReleaseDate, 
-		Text:        enrichedData.Text,    
-		Link:        enrichedData.Link, 
+		ReleaseDate: enrichedData.ReleaseDate,
+		Text:        enrichedData.Text,
+		Link:        enrichedData.Link,
 	}
 
 	songID, err := r.serv.CreateSong(c.Request.Context(), r.log, newSong)
@@ -64,9 +64,20 @@ func (r *SongController) UpdateSong(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		r.log.Error("Failed to parse song ID", slog.String("err", err.Error()))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid song ID"})
+		return
+	}
 
+	song.Id = id
 	updatedSong, err := r.serv.UpdateSong(c.Request.Context(), r.log, song)
 	if err != nil {
+		if err.Error() == "record not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
+			return
+		}
 		r.log.Error("Failed to update song", slog.String("err", err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update song"})
 		return
@@ -84,7 +95,12 @@ func (r *SongController) DeleteSong(c *gin.Context) {
 		return
 	}
 
-	if err := r.serv.DeleteSong(c.Request.Context(), r.log, songId); err != nil {
+	err = r.serv.DeleteSong(c.Request.Context(), r.log, songId)
+	if err != nil {
+		if err.Error() == "record not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
+			return
+		}
 		r.log.Error("Failed to delete song", slog.String("err", err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete song"})
 		return
