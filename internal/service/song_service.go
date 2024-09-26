@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
 	"online-song-library/internal/model"
 	"online-song-library/internal/repository"
-	"log/slog"
 	"strings"
+
 	"github.com/google/uuid"
 )
 
@@ -60,4 +64,25 @@ func (s *SongService) GetSongVerses(ctx context.Context, log *slog.Logger, songI
 
 	paginatedVerses := verses[start:end]
 	return paginatedVerses, nil
+}
+
+func (s *SongService) FetchSongDetailsFromAPI(ctx context.Context, group, title string) (model.Song, error) {
+	apiURL := fmt.Sprintf("https://external-api.com/info?group=%s&song=%s", group, title)
+
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return model.Song{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return model.Song{}, errors.New("failed to fetch song details from external API")
+	}
+
+	var songDetails model.Song
+	if err := json.NewDecoder(resp.Body).Decode(&songDetails); err != nil {
+		return model.Song{}, err
+	}
+
+	return songDetails, nil
 }
