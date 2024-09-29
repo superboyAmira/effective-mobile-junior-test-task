@@ -7,8 +7,5 @@ services:
       POSTGRES_USER: superboy
       POSTGRES_PASSWORD: superboy
       POSTGRES_DB: song-lib-db
-    # volumes:
-    #   - ./scripts/001.sql:/docker-entrypoint-initdb.d/001.sql
-    #   - ./scripts/002.sql:/docker-entrypoint-initdb.d/002.sql
     ports:
       - 9900:5432

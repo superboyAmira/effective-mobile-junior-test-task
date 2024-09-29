@@ -28,3 +28,7 @@ type SongFilter struct {
 	Text        *string    `json:"text,omitempty"`
 	Link        *string    `json:"link,omitempty"`
 }
+
+type ErrorResponse struct {
+    Error string `json:"error"`
+}

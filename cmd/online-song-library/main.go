@@ -12,10 +12,9 @@ import (
 	"online-song-library/internal/service"
 	"online-song-library/pkg/logger"
 	"online-song-library/pkg/storage/postgresql"
-	test "online-song-library/test/external_api_mock"
+	test_api "online-song-library/test/external_api"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -26,6 +25,10 @@ const (
 	envPath = "../../config/.env"
 )
 
+// @title Song Library API
+// @version 1.0
+// @description API for managing a song library
+// @BasePath /
 func main() {
 	err := godotenv.Load(envPath)
 	if err != nil {
@@ -36,10 +39,10 @@ func main() {
 
 	// mock external ip
 	if os.Getenv("EXTERNAL_API_HTTPTEST_SERVER") == "true" {
-		externalAPI := test.CreateMockExternalAPIServer(log)
+		externalAPI := test_api.CreateMockExternalAPIServer(log)
 		defer externalAPI.Close()
 		log.Info("Mock server is starting", slog.String("port", externalAPI.URL))
-		os.Setenv("PATH_EXTERNAL_API_HTTPTEST_SERVER", strings.Split(externalAPI.URL, ":")[2])
+		os.Setenv("PATH_EXTERNAL_API_HTTPTEST_SERVER", externalAPI.URL)
 	}
 
 	// db

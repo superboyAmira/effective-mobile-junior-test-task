@@ -10,6 +10,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// for mocks
+type Repository interface {
+	Create(ctx context.Context, log *slog.Logger, song model.Song) (uuid.UUID, error)
+	Update(ctx context.Context, log *slog.Logger, song model.Song) (model.Song, error)
+	Delete(ctx context.Context, log *slog.Logger, songUUID uuid.UUID) error 
+	GetAll(ctx context.Context, log *slog.Logger, limit int, offset int, filter model.SongFilter) ([]model.Song, error)
+	GetVerses(ctx context.Context, log *slog.Logger, songUUID uuid.UUID) (string, error)
+}
+
 type SongRepository struct {
 	db *gorm.DB
 }

@@ -18,11 +18,22 @@ import (
 	"github.com/google/uuid"
 )
 
-type SongService struct {
-	repo *repository.SongRepository
+// for mocks
+type Service interface {
+	CreateSong(ctx context.Context, log *slog.Logger, song model.Song) (uuid.UUID, error)
+	UpdateSong(ctx context.Context, log *slog.Logger, song model.Song) (model.Song, error)
+	DeleteSong(ctx context.Context, log *slog.Logger, songId uuid.UUID) error
+	GetLibrary(ctx context.Context, log *slog.Logger, filter model.SongFilter, limit, offset int) ([]model.Song, error)
+	GetSongVerses(ctx context.Context, log *slog.Logger, songId uuid.UUID, page, pageSize int) ([]string, error)
+	FetchSongDetailsFromAPI(ctx context.Context, log *slog.Logger, group, title string) (model.Song, error)
 }
 
-func NewSongService(r *repository.SongRepository) *SongService {
+
+type SongService struct {
+	repo repository.Repository
+}
+
+func NewSongService(r repository.Repository) *SongService {
 	return &SongService{
 		repo: r,
 	}
@@ -81,12 +92,9 @@ func (s *SongService) GetSongVerses(ctx context.Context, log *slog.Logger, songI
 }
 
 func (s *SongService) FetchSongDetailsFromAPI(ctx context.Context, log *slog.Logger, group, title string) (model.Song, error) {
-	port := os.Getenv("PATH_EXTERNAL_API_HTTPTEST_SERVER")
-	if _, err := strconv.Atoi(port); err != nil {
-		return model.Song{}, err
-	}
+	path := os.Getenv("PATH_EXTERNAL_API_HTTPTEST_SERVER")
 
-	baseURL := fmt.Sprintf("http://localhost:%s/info", port)
+	baseURL := fmt.Sprintf("%s/info", path)
 	params := url.Values{}
 	params.Add("group", group)
 	params.Add("song", title)

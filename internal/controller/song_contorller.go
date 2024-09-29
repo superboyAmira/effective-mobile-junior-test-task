@@ -12,17 +12,28 @@ import (
 )
 
 type SongController struct {
-	serv *service.SongService
+	serv service.Service
 	log  *slog.Logger
 }
 
-func NewSongController(service *service.SongService, logger *slog.Logger) *SongController {
+func NewSongController(service service.Service, logger *slog.Logger) *SongController {
 	return &SongController{
 		serv: service,
 		log:  logger,
 	}
 }
 
+// CreateSong creates a new song
+// @Summary Create a new song
+// @Description Creates a new song with the given details
+// @Tags songs
+// @Accept  json
+// @Produce  json
+// @Param song body model.SongDTO true "Song details"
+// @Success 200 {object} model.ErrorResponse "song_id"
+// @Failure 400 {object} model.ErrorResponse "Invalid input"
+// @Failure 500 {object} model.ErrorResponse "Failed to create song"
+// @Router /songs [post]
 func (r *SongController) CreateSong(c *gin.Context) {
 	var songDTO model.SongDTO
 	if err := c.ShouldBindJSON(&songDTO); err != nil {
@@ -57,6 +68,19 @@ func (r *SongController) CreateSong(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"song_id": songID.String()})
 }
 
+// UpdateSong updates an existing song
+// @Summary Update an existing song
+// @Description Updates a song with the given ID
+// @Tags songs
+// @Accept  json
+// @Produce  json
+// @Param id path string true "Song ID"
+// @Param song body model.Song true "Updated song details"
+// @Success 200 {object} model.Song
+// @Failure 400 {object} model.ErrorResponse "Invalid input or ID"
+// @Failure 404 {object} model.ErrorResponse "Record not found"
+// @Failure 500 {object} model.ErrorResponse "Failed to update song"
+// @Router /songs/{id} [put]
 func (r *SongController) UpdateSong(c *gin.Context) {
 	var song model.Song
 	if err := c.ShouldBindJSON(&song); err != nil {
@@ -86,6 +110,16 @@ func (r *SongController) UpdateSong(c *gin.Context) {
 	c.JSON(http.StatusOK, updatedSong)
 }
 
+// DeleteSong deletes a song by ID
+// @Summary Delete a song
+// @Description Deletes a song with the given ID
+// @Tags songs
+// @Param id path string true "Song ID"
+// @Success 200 {object} model.ErrorResponse "Song deleted successfully"
+// @Failure 400 {object} model.ErrorResponse "Invalid song ID"
+// @Failure 404 {object} model.ErrorResponse "Record not found"
+// @Failure 500 {object} model.ErrorResponse "Failed to delete song"
+// @Router /songs/{id} [delete]
 func (r *SongController) DeleteSong(c *gin.Context) {
 	songIdStr := c.Param("id")
 	songId, err := uuid.Parse(songIdStr)
@@ -109,6 +143,21 @@ func (r *SongController) DeleteSong(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Song deleted successfully"})
 }
 
+// GetLibrary returns a list of songs
+// @Summary Get all songs in the library
+// @Description Returns a list of all songs with optional filtering and pagination
+// @Tags songs
+// @Accept  json
+// @Produce  json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Param id query string false "Song ID"
+// @Param group query string false "Group name"
+// @Param title query string false "Song title"
+// @Success 200 {array} model.Song
+// @Failure 400 {object} model.ErrorResponse "Invalid query parameters"
+// @Failure 500 {object} model.ErrorResponse "Failed to get library"
+// @Router /songs [get]
 func (r *SongController) GetLibrary(c *gin.Context) {
 	var filter model.SongFilter
 	if err := c.ShouldBindQuery(&filter); err != nil {
@@ -138,6 +187,19 @@ func (r *SongController) GetLibrary(c *gin.Context) {
 	c.JSON(http.StatusOK, songs)
 }
 
+// GetSongVerses returns paginated verses for a song
+// @Summary Get song verses
+// @Description Returns paginated verses for the specified song
+// @Tags songs
+// @Accept  json
+// @Produce  json
+// @Param id path string true "Song ID"
+// @Param page query int false "Page number"
+// @Param page_size query int false "Number of verses per page"
+// @Success 200 {array} string
+// @Failure 400 {object} model.ErrorResponse "Invalid song ID or pagination parameters"
+// @Failure 500 {object} model.ErrorResponse "Failed to get song verses"
+// @Router /songs/{id}/verses [get]
 func (r *SongController) GetSongVerses(c *gin.Context) {
 	songIdStr := c.Param("id")
 	songId, err := uuid.Parse(songIdStr)

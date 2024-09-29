@@ -5,6 +5,9 @@ import (
 	"online-song-library/internal/controller"
 
 	"github.com/gin-gonic/gin"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
+	_ "online-song-library/docs" 
 )
 
 
@@ -23,6 +26,9 @@ func SetupRouter(songController *controller.SongController, log *slog.Logger) *g
 	router.DELETE("/songs/:id", songController.DeleteSong)
 	router.GET("/songs", songController.GetLibrary)
 	router.GET("/songs/:id/verses", songController.GetSongVerses)
+
+	// swagger UI
+	router.GET("/api/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return router
 }
