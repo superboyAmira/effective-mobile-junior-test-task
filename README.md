@@ -13,6 +13,8 @@ test assignment for the junior position. 2024 Go.
 * Swagger/SwaggerUI
 * Docker-compose
 
+в проекте старался имитировать подход GitFlow
+
 # QuickStart
 
 1. Запуск контейнера с бд
@@ -24,7 +26,7 @@ test assignment for the junior position. 2024 Go.
 ```cd cmd/online-song-library```
 ```go run main.go```
 
-3. http://localhost:8080/api/swagger/iйndex.html#/
+3. http://localhost:8080/api/swagger/index.html#/
 
 по этому адресу вы сможете нати документацию Swagger, по которой можно вручную потестировать АПИ
 
