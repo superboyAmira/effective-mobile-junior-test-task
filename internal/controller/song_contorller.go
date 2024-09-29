@@ -170,10 +170,15 @@ func (r *SongController) GetLibrary(c *gin.Context) {
 	offset := c.DefaultQuery("offset", "0")
 
 	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		r.log.Error("Invalid pagination parameters", slog.String("err", err.Error()))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
+		return
+	}
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
 		r.log.Error("Invalid pagination parameters", slog.String("err", err.Error()))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit or offset"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset"})
 		return
 	}
 
@@ -213,10 +218,15 @@ func (r *SongController) GetSongVerses(c *gin.Context) {
 	pageSize := c.DefaultQuery("page_size", "5")
 
 	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		r.log.Error("Invalid pagination parameters", slog.String("err", err.Error()))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page"})
+		return
+	}
 	pageSizeInt, err := strconv.Atoi(pageSize)
 	if err != nil {
 		r.log.Error("Invalid pagination parameters", slog.String("err", err.Error()))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page or page size"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page size"})
 		return
 	}
 	verses, err := r.serv.GetSongVerses(c.Request.Context(), r.log, songId, pageInt, pageSizeInt)
